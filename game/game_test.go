@@ -19,3 +19,16 @@ func TestGetPathInOneDimensionalMaze(t *testing.T) {
 		fmt.Println(i)
 	}
 }
+
+func TestAStar(t *testing.T) {
+	grid := Grid{
+		{0, 0, 0, 0, 0},
+		{0, 1, 1, 1, 0},
+		{0, 0, 0, 0, 0},
+		{0, 0, 1, 0, 0},
+		{0, 0, 0, 0, 0},
+	}
+	aStar := NewAStar(grid, Vector{0, 0}, Vector{4, 4})
+	search := aStar.Search()
+	fmt.Printf("path: %v \n", search)
+}
