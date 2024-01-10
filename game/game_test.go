@@ -32,3 +32,9 @@ func TestAStar(t *testing.T) {
 	search := aStar.Search()
 	fmt.Printf("path: %v \n", search)
 }
+
+func TestCalculateMulti(t *testing.T) {
+	fmt.Printf("%f \n", CalculateMulti(7))
+	fmt.Printf("%f \n", CalculateMulti(7.01))
+	fmt.Printf("%f \n", CalculateMulti(14))
+}
