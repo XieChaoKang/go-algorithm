@@ -48,17 +48,17 @@ func TestCalculateMulti(t *testing.T) {
 func TestLinkGame(t *testing.T) {
 	game := &LinkGame{
 		LinkMap: [][]int{
-			{1, 1, 2, 6, 4, 4},
-			{1, 5, 2, 6, 7, 8},
-			{5, 0, 0, 9, 0, 9},
+			{6, 2, 1, 0, 4, 4},
+			{0, 5, 2, 0, 7, 8},
+			{5, 0, 0, 6, 0, 9},
 			{1, 3, 6, 0, 0, 0},
 			{4, 7, 8, 9, 0, 9},
-			{5, 0, 7, 9, 8, 0},
+			{5, 0, 7, 9, 8, 5},
 		},
 	}
-	fmt.Printf("%v \n", game.LinkMap[4][3])
-	fmt.Printf("%v \n", game.LinkMap[2][5])
-	_, path := game.FindPassablePath(4, 3, 2, 5)
+	fmt.Printf("%v \n", game.LinkMap[0][0])
+	fmt.Printf("%v \n", game.LinkMap[2][3])
+	_, path := game.FindPassablePath(0, 0, 2, 3)
 	fmt.Printf("%v \n", path)
 	for _, ints := range path {
 		fmt.Printf("%v \n", game.LinkMap[ints[0]][ints[1]])

@@ -25,6 +25,9 @@ func (l *LinkGame) FindPassablePath(startReel, startLine, endReel, endLine int) 
 	if suc, path = l.FindZConnectPath(startReel, startLine, endReel, endLine); suc {
 		return suc, path
 	}
+	if suc, path = l.FindHalfBorderPath(startReel, startLine, endReel, endLine); suc {
+		return suc, path
+	}
 	return suc, path
 }
 
@@ -183,6 +186,70 @@ func (l *LinkGame) FindZConnectPath(startReel, startLine, endReel, endLine int) 
 		var starPath [][]int
 		for j := tempStartReel; j < i; j++ {
 			starPath = append(starPath, []int{j, tempStartLine})
+		}
+		res = append(starPath, res...)
+		if find {
+			return true, res
+		}
+	}
+	return false, nil
+}
+
+// [ ] 连法判断
+func (l *LinkGame) FindHalfBorderPath(startReel, startLine, endReel, endLine int) (bool, [][]int) {
+	// 优先判断是否都在同一条边界上
+	// 竖向边界
+	if startReel == endReel && (startReel == 0 || startReel == len(l.LinkMap)-1) {
+		return true, [][]int{{startReel, startLine}, {endReel, endLine}}
+	}
+	// 横向边界
+	if startLine == endLine && (startLine == 0 || startLine == len(l.LinkMap[0])-1) {
+		return true, [][]int{{startReel, startLine}, {endReel, endLine}}
+	}
+	// 左右两边分别判断是否可达 注意边界
+	// 从左边判断是否可达
+	for i := startReel; i >= 0; i-- {
+		// 判断当前列是否可以通行到结束节点的那一行
+		suc, path := l.FindVerticalConnectPath(i, startLine, i, endLine, true)
+		if !suc && i != 0 {
+			continue
+		}
+		// 判断和结束节点是同一个节点 是则代表已经找到了可行通路 直接返回
+		if suc && i == endReel {
+			return true, path
+		}
+		// 判断结束节点是否可以抵达当前列
+		find, transverseConnectPath := l.FindTransverseConnectPath(i, endLine, endReel, endLine, true)
+		res := append(path, transverseConnectPath[1:]...)
+		// 拼接开始坐标到当前 i 的坐标
+		var starPath [][]int
+		for j := startReel; j < i; j++ {
+			starPath = append(starPath, []int{j, startLine})
+		}
+		res = append(starPath, res...)
+		if find {
+			return true, res
+		}
+	}
+	// 从右边判断是否可达
+	for i := startReel; i < len(l.LinkMap); i++ {
+		// 判断当前列是否可以通行到结束节点的那一行
+		suc, path := l.FindVerticalConnectPath(i, startLine, i, endLine, true)
+		// 边界外围可通行
+		if !suc && i != len(l.LinkMap)-1 {
+			continue
+		}
+		// 判断和结束节点是同一个节点 是则代表已经找到了可行通路 直接返回
+		if suc && i == endReel {
+			return true, path
+		}
+		// 判断结束节点是否可以抵达当前列
+		find, transverseConnectPath := l.FindTransverseConnectPath(i, endLine, endReel, endLine, true)
+		res := append(path, transverseConnectPath[1:]...)
+		// 拼接开始坐标到当前 i 的坐标
+		var starPath [][]int
+		for j := startReel; j < i; j++ {
+			starPath = append(starPath, []int{j, startLine})
 		}
 		res = append(starPath, res...)
 		if find {
