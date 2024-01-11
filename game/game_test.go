@@ -33,8 +33,34 @@ func TestAStar(t *testing.T) {
 	fmt.Printf("path: %v \n", search)
 }
 
+func TestSli(t *testing.T) {
+	a := []int{1, 2, 3}
+	a = a[1:]
+	fmt.Printf("%v \n", a)
+}
+
 func TestCalculateMulti(t *testing.T) {
 	fmt.Printf("%f \n", CalculateMulti(7))
 	fmt.Printf("%f \n", CalculateMulti(7.01))
 	fmt.Printf("%f \n", CalculateMulti(14))
+}
+
+func TestLinkGame(t *testing.T) {
+	game := &LinkGame{
+		LinkMap: [][]int{
+			{1, 1, 2, 6, 4, 4},
+			{1, 5, 2, 6, 7, 8},
+			{5, 0, 0, 9, 0, 9},
+			{1, 3, 6, 0, 0, 0},
+			{4, 7, 8, 9, 0, 9},
+			{5, 0, 7, 9, 8, 0},
+		},
+	}
+	fmt.Printf("%v \n", game.LinkMap[4][3])
+	fmt.Printf("%v \n", game.LinkMap[2][5])
+	_, path := game.FindPassablePath(4, 3, 2, 5)
+	fmt.Printf("%v \n", path)
+	for _, ints := range path {
+		fmt.Printf("%v \n", game.LinkMap[ints[0]][ints[1]])
+	}
 }
