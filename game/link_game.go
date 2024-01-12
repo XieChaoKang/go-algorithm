@@ -1,5 +1,10 @@
 package game
 
+import (
+	"math/rand"
+	"time"
+)
+
 var nullPosition = 0
 
 // 连连看游戏
@@ -57,7 +62,7 @@ func (l *LinkGame) IsPassablePath(paths [][]int, checkTurningLine bool) bool {
 	// 去掉开头和结尾 判断路径中间是否已经被站位
 	temp := paths[1 : len(paths)-1]
 	for _, path := range temp {
-		if l.LinkMap[path[0]][path[1]] != 0 {
+		if l.LinkMap[path[0]][path[1]] != nullPosition {
 			return false
 		}
 	}
@@ -257,4 +262,132 @@ func (l *LinkGame) FindHalfBorderPath(startReel, startLine, endReel, endLine int
 		}
 	}
 	return false, nil
+}
+
+func (l *LinkGame) ShuffleMap() {
+	if len(l.LinkMap) < 2 {
+		return
+	}
+	// 记录当前地图有icon的下标和icon列表
+	iconIndex := make([][]int, 0)
+	icons := make([]int, 0)
+	for reel, lineIcons := range l.LinkMap {
+		for line, icon := range lineIcons {
+			if icon == nullPosition {
+				continue
+			}
+			iconIndex = append(iconIndex, []int{reel, line})
+			icons = append(icons, icon)
+		}
+	}
+	rand.Seed(time.Now().UnixNano())
+	rand.Shuffle(len(icons), func(i, j int) {
+		icons[i], icons[j] = icons[j], icons[i]
+	})
+	// 写回地图
+	for index, position := range iconIndex {
+		l.LinkMap[position[0]][position[1]] = icons[index]
+	}
+}
+
+func (l *LinkGame) ShuffleMapWithPassablePath() {
+	if len(l.LinkMap) < 2 {
+		return
+	}
+	// 记录当前地图有icon的下标和icon列表
+	iconIndex := make([][]int, 0)
+	icons := make([]int, 0)
+	// 随机找一个两个及以上的icon
+	findFlag := false
+	iconNum := make(map[int][][]int, 0)
+	var sameIconPosition [][]int
+	for reel, lineIcons := range l.LinkMap {
+		for line, icon := range lineIcons {
+			if icon == nullPosition {
+				continue
+			}
+			iconIndex = append(iconIndex, []int{reel, line})
+			icons = append(icons, icon)
+			if !findFlag {
+				iconNum[icon] = append(iconNum[icon], []int{reel, line})
+				length := len(iconNum[icon])
+				if length == 2 {
+					findFlag = true
+					sameIconPosition = iconNum[icon]
+				}
+			}
+		}
+	}
+	rand.Seed(time.Now().UnixNano())
+	rand.Shuffle(len(icons), func(i, j int) {
+		icons[i], icons[j] = icons[j], icons[i]
+	})
+	// 写回地图
+	for index, position := range iconIndex {
+		l.LinkMap[position[0]][position[1]] = icons[index]
+	}
+	if len(sameIconPosition) == 0 {
+		return
+	}
+	// 查找可行路径 进行icon替换
+	reel, line := l.tryPassablePath(sameIconPosition)
+	endReel := sameIconPosition[1][0]
+	endLine := sameIconPosition[1][1]
+	if reel != -1 && line != -1 {
+		oldIcon := l.LinkMap[reel][line]
+		l.LinkMap[reel][line] = l.LinkMap[endReel][endLine]
+		l.LinkMap[endReel][endLine] = oldIcon
+	}
+}
+
+func (l *LinkGame) tryPassablePath(sameIconPosition [][]int) (reel, line int) {
+	reel, line = -1, -1
+	// 优先尝试竖向查找 如果没有 代表整列都为空的 那就整列的横线都遍历一遍
+	startReel := sameIconPosition[0][0]
+	startLine := sameIconPosition[0][1]
+	reel, line = l.tryVerticalPath(startReel, startLine)
+	if reel != -1 && line != -1 {
+		return
+	}
+	for i := 0; i < len(l.LinkMap); i++ {
+		reel, line = l.tryVerticalPath(i, startLine)
+		if reel != -1 && line != -1 {
+			return
+		}
+	}
+	return
+}
+
+// 横向查找可替换的icon的下标
+func (l *LinkGame) tryTransversePath(startIconReel, startIconLine int) (reel, line int) {
+	// 向左偏移 尝试查找是否有可达的存在icon的位置
+	for i := startIconReel - 1; i >= 0; i-- {
+		if l.LinkMap[i][startIconLine] != nullPosition {
+			return i, startIconLine
+		}
+	}
+	// 向右偏移
+	for i := startIconReel + 1; i < len(l.LinkMap); i++ {
+		if l.LinkMap[i][startIconLine] != nullPosition {
+			return i, startIconLine
+		}
+	}
+	return -1, -1
+}
+
+// 竖向查找
+func (l *LinkGame) tryVerticalPath(startIconReel, startIconLine int) (reel, line int) {
+	// 向上偏移 尝试查找是否有可达的存在icon的位置
+	for i := startIconLine - 1; i >= 0; i-- {
+		if l.LinkMap[startIconReel][i] != nullPosition {
+			return startIconReel, i
+		}
+	}
+	// 向下偏移
+	for i := startIconLine + 1; i < len(l.LinkMap[0]); i++ {
+		if l.LinkMap[startIconReel][i] != nullPosition {
+			return startIconReel, i
+		}
+	}
+	return -1, -1
 }

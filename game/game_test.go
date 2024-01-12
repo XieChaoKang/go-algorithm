@@ -56,6 +56,7 @@ func TestLinkGame(t *testing.T) {
 			{5, 0, 7, 9, 8, 5},
 		},
 	}
+	printMap(game.LinkMap)
 	fmt.Printf("%v \n", game.LinkMap[0][0])
 	fmt.Printf("%v \n", game.LinkMap[2][3])
 	_, path := game.FindPassablePath(0, 0, 2, 3)
@@ -63,4 +64,6 @@ func TestLinkGame(t *testing.T) {
 	for _, ints := range path {
 		fmt.Printf("%v \n", game.LinkMap[ints[0]][ints[1]])
 	}
+	game.ShuffleMapWithPassablePath()
+	printMap(game.LinkMap)
 }
