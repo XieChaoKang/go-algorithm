@@ -255,7 +255,7 @@ func (l *LinkGame) FindHalfBorderPath(startReel, startLine, endReel, endLine int
 			return true, path
 		}
 		// 如果是边界外围就必须是同一列才允许可解 不然就多了一个拐弯 不是 [ 形状了
-		if i == 0 && endReel != i {
+		if i == len(l.LinkMap)-1 && endReel != i {
 			continue
 		}
 		// 判断结束节点是否可以抵达当前列
