@@ -48,22 +48,28 @@ func TestCalculateMulti(t *testing.T) {
 func TestLinkGame(t *testing.T) {
 	game := &LinkGame{
 		LinkMap: [][]int{
-			{6, 2, 1, 0, 4, 4},
-			{0, 5, 2, 0, 7, 8},
-			{5, 0, 0, 6, 0, 9},
-			{1, 3, 6, 0, 0, 0},
-			{4, 7, 8, 9, 0, 9},
-			{5, 0, 7, 9, 8, 5},
+			{4, 15, 2, 0, 14, 2, 12},
+			{14, 6, 4, 0, 13, 8, 13},
+			{14, 6, 2, 0, 14, 8, 2},
+			{0, 0, 0, 0, 0, 0, 0},
+			{0, 0, 0, 0, 0, 0, 0},
+			{4, 15, 6, 0, 9, 2, 2},
+			{14, 12, 6, 0, 9, 2, 2},
+			{6, 6, 14, 0, 2, 4, 2},
+			{0, 0, 0, 0, 0, 0, 0},
+			{0, 0, 0, 0, 0, 0, 0},
+			{0, 0, 0, 0, 0, 0, 0},
+			{0, 0, 0, 0, 0, 0, 0},
 		},
 	}
-	printMap(game.LinkMap)
-	fmt.Printf("%v \n", game.LinkMap[0][0])
-	fmt.Printf("%v \n", game.LinkMap[2][3])
-	_, path := game.FindPassablePath(0, 0, 2, 3)
-	fmt.Printf("%v \n", path)
+	//printMap(game.LinkMap)
+	fmt.Printf("%v \n", game.LinkMap[2][0])
+	fmt.Printf("%v \n", game.LinkMap[2][4])
+	suc, path := game.FindPassablePath(2, 0, 2, 4)
+	fmt.Printf("%v %v \n", suc, path)
 	for _, ints := range path {
 		fmt.Printf("%v \n", game.LinkMap[ints[0]][ints[1]])
 	}
-	game.ShuffleMapWithPassablePath()
-	printMap(game.LinkMap)
+	//game.ShuffleMapWithPassablePath()
+	//printMap(game.LinkMap)
 }

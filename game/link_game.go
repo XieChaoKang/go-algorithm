@@ -216,6 +216,7 @@ func (l *LinkGame) FindHalfBorderPath(startReel, startLine, endReel, endLine int
 	for i := startReel; i >= 0; i-- {
 		// 判断当前列是否可以通行到结束节点的那一行
 		suc, path := l.FindVerticalConnectPath(i, startLine, i, endLine, true)
+		// 边界外围可通行
 		if !suc && i != 0 {
 			continue
 		}
@@ -223,8 +224,15 @@ func (l *LinkGame) FindHalfBorderPath(startReel, startLine, endReel, endLine int
 		if suc && i == endReel {
 			return true, path
 		}
+		// 如果是边界外围就必须是同一列才允许可解 不然就多了一个拐弯 不是 [ 形状了
+		if i == 0 && endReel != i {
+			continue
+		}
 		// 判断结束节点是否可以抵达当前列
-		find, transverseConnectPath := l.FindTransverseConnectPath(i, endLine, endReel, endLine, true)
+		find, transverseConnectPath := l.FindTransverseConnectPath(i, startLine, endReel, endLine, true)
+		if !find {
+			continue
+		}
 		res := append(path, transverseConnectPath[1:]...)
 		// 拼接开始坐标到当前 i 的坐标
 		var starPath [][]int
@@ -232,9 +240,7 @@ func (l *LinkGame) FindHalfBorderPath(startReel, startLine, endReel, endLine int
 			starPath = append(starPath, []int{j, startLine})
 		}
 		res = append(starPath, res...)
-		if find {
-			return true, res
-		}
+		return true, res
 	}
 	// 从右边判断是否可达
 	for i := startReel; i < len(l.LinkMap); i++ {
@@ -248,8 +254,15 @@ func (l *LinkGame) FindHalfBorderPath(startReel, startLine, endReel, endLine int
 		if suc && i == endReel {
 			return true, path
 		}
+		// 如果是边界外围就必须是同一列才允许可解 不然就多了一个拐弯 不是 [ 形状了
+		if i == 0 && endReel != i {
+			continue
+		}
 		// 判断结束节点是否可以抵达当前列
 		find, transverseConnectPath := l.FindTransverseConnectPath(i, endLine, endReel, endLine, true)
+		if !find {
+			continue
+		}
 		res := append(path, transverseConnectPath[1:]...)
 		// 拼接开始坐标到当前 i 的坐标
 		var starPath [][]int
