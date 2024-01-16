@@ -12,7 +12,18 @@ type LinkGame struct {
 	LinkMap [][]int // 0 代表没有东西 可以通行； 其他内容都代表有东西 无法通行
 }
 
+func (l *LinkGame) SetPositionNull(reel, line int) bool {
+	if !l.IsValidPos(reel, line) {
+		return false
+	}
+	l.LinkMap[reel][line] = nullPosition
+	return true
+}
+
 func (l *LinkGame) FindPassablePath(startReel, startLine, endReel, endLine int) (bool, [][]int) {
+	if startReel == endReel && startLine == endLine {
+		return false, nil
+	}
 	if !l.IsValidPos(startReel, startLine) || !l.IsValidPos(endReel, endLine) || l.LinkMap[startReel][startLine] != l.LinkMap[endReel][endLine] {
 		return false, nil
 	}
@@ -170,6 +181,7 @@ func (l *LinkGame) FindZConnectPath(startReel, startLine, endReel, endLine int) 
 		tempEndReel = startReel
 		tempEndLine = startLine
 	}
+	// 横向查找
 	for i := tempStartReel + 1; i <= tempEndReel; i++ {
 		// 横向移动过不去 直接结束
 		if l.LinkMap[i][tempStartLine] != nullPosition {
@@ -186,15 +198,59 @@ func (l *LinkGame) FindZConnectPath(startReel, startLine, endReel, endLine int) 
 		}
 		// 判断结束节点是否可以抵达当前列
 		find, transverseConnectPath := l.FindTransverseConnectPath(i, tempEndLine, tempEndReel, tempEndLine, true)
-		res := append(path, transverseConnectPath[1:]...)
-		// 拼接开始坐标到当前 i 的坐标
-		var starPath [][]int
-		for j := tempStartReel; j < i; j++ {
-			starPath = append(starPath, []int{j, tempStartLine})
-		}
-		res = append(starPath, res...)
 		if find {
+			res := append(path, transverseConnectPath[1:]...)
+			// 拼接开始坐标到当前 i 的坐标
+			var starPath [][]int
+			for j := tempStartReel; j < i; j++ {
+				starPath = append(starPath, []int{j, tempStartLine})
+			}
+			res = append(starPath, res...)
 			return true, res
+		}
+	}
+	// 纵向查找
+	var i = 0
+	if tempStartLine > tempEndLine {
+		i = tempStartLine - 1
+	} else {
+		i = tempStartLine + 1
+	}
+	for (i <= tempEndLine || i >= tempEndLine) && i >= 0 && i <= len(l.LinkMap[0])-1 {
+		// 纵向移动过不去 直接结束
+		if l.LinkMap[tempStartReel][i] != nullPosition {
+			break
+		}
+		// 判断当前节点是否可以通行到结束节点的那一列
+		suc, path := l.FindTransverseConnectPath(tempStartReel, i, tempEndReel, i, true)
+		if !suc {
+			if tempStartLine > tempEndLine {
+				i--
+			} else {
+				i++
+			}
+			continue
+		}
+		// 判断和结束节点是同一个节点 是则代表已经找到了可行通路 直接返回
+		if suc && i == tempEndLine {
+			return true, path
+		}
+		// 判断结束节点是否可以抵达当前节点
+		find, transverseConnectPath := l.FindVerticalConnectPath(tempEndReel, i, tempEndReel, tempEndLine, true)
+		if find {
+			res := append(path, transverseConnectPath[1:]...)
+			// 拼接开始坐标到当前 i 的坐标
+			var starPath [][]int
+			for j := tempStartReel; j < i; j++ {
+				starPath = append(starPath, []int{j, tempStartLine})
+			}
+			res = append(starPath, res...)
+			return true, res
+		}
+		if tempStartLine > tempEndLine {
+			i--
+		} else {
+			i++
 		}
 	}
 	return false, nil
@@ -211,67 +267,106 @@ func (l *LinkGame) FindHalfBorderPath(startReel, startLine, endReel, endLine int
 	if startLine == endLine && (startLine == 0 || startLine == len(l.LinkMap[0])-1) {
 		return true, [][]int{{startReel, startLine}, {endReel, endLine}}
 	}
-	// 左右两边分别判断是否可达 注意边界
-	// 从左边判断是否可达
-	for i := startReel; i >= 0; i-- {
-		// 判断当前列是否可以通行到结束节点的那一行
-		suc, path := l.FindVerticalConnectPath(i, startLine, i, endLine, true)
-		// 边界外围可通行
-		if !suc && i != 0 {
-			continue
+	// 判断是否有一列处于边界列 边界列的话则只需要判断另外一列是否能抵达边界列的同一行的节点即可
+	if startReel == 0 || startReel == len(l.LinkMap)-1 {
+		suc, path := l.FindTransverseConnectPath(startReel, endLine, endReel, endLine, true)
+		if suc {
+			return suc, path
 		}
-		// 判断和结束节点是同一个节点 是则代表已经找到了可行通路 直接返回
-		if suc && i == endReel {
-			return true, path
-		}
-		// 如果是边界外围就必须是同一列才允许可解 不然就多了一个拐弯 不是 [ 形状了
-		if i == 0 && endReel != i {
-			continue
-		}
-		// 判断结束节点是否可以抵达当前列
-		find, transverseConnectPath := l.FindTransverseConnectPath(i, startLine, endReel, endLine, true)
-		if !find {
-			continue
-		}
-		res := append(path, transverseConnectPath[1:]...)
-		// 拼接开始坐标到当前 i 的坐标
-		var starPath [][]int
-		for j := startReel; j < i; j++ {
-			starPath = append(starPath, []int{j, startLine})
-		}
-		res = append(starPath, res...)
-		return true, res
 	}
-	// 从右边判断是否可达
-	for i := startReel; i < len(l.LinkMap); i++ {
-		// 判断当前列是否可以通行到结束节点的那一行
-		suc, path := l.FindVerticalConnectPath(i, startLine, i, endLine, true)
-		// 边界外围可通行
-		if !suc && i != len(l.LinkMap)-1 {
+	if endReel == 0 || endReel == len(l.LinkMap)-1 {
+		suc, path := l.FindTransverseConnectPath(startReel, startLine, endReel, startLine, true)
+		if suc {
+			return suc, path
+		}
+	}
+	// 判断是否有一行处于边界行 边界行的话则只需要判断另外一行是否能抵达边界行的同一列的节点即可
+	if startLine == 0 || startLine == len(l.LinkMap[0])-1 {
+		suc, path := l.FindVerticalConnectPath(endReel, startLine, endReel, endLine, true)
+		if suc {
+			return suc, path
+		}
+	}
+	if endLine == 0 || endLine == len(l.LinkMap[0])-1 {
+		suc, path := l.FindVerticalConnectPath(startReel, endLine, startReel, startLine, true)
+		if suc {
+			return suc, path
+		}
+	}
+	// 横竖两个方向分别判断是否可达
+	suc, path := l.findVerticalHalfBorderPath(startReel, startLine, endReel, endLine)
+	if suc {
+		return suc, path
+	}
+	suc, path = l.findTransverseHalfBorderPath(startReel, startLine, endReel, endLine)
+	if suc {
+		return suc, path
+	}
+	return false, nil
+}
+
+func (l *LinkGame) findVerticalHalfBorderPath(startReel int, startLine int, endReel int, endLine int) (bool, [][]int) {
+	lines := make([]int, 0)
+	// 上下分别遍历 可直达的line集合
+	for i := startLine; i >= 0; i-- {
+		if l.LinkMap[startReel][i] != nullPosition && i != startLine {
+			break
+		}
+		lines = append(lines, i)
+	}
+	for i := startLine + 1; i <= len(l.LinkMap[0])-1; i++ {
+		if l.LinkMap[startReel][i] != nullPosition {
+			break
+		}
+		lines = append(lines, i)
+	}
+	// 遍历lines 寻找end position 可达到的节点
+	for _, line := range lines {
+		if l.LinkMap[endReel][line] != nullPosition {
 			continue
 		}
-		// 判断和结束节点是同一个节点 是则代表已经找到了可行通路 直接返回
-		if suc && i == endReel {
-			return true, path
-		}
-		// 如果是边界外围就必须是同一列才允许可解 不然就多了一个拐弯 不是 [ 形状了
-		if i == len(l.LinkMap)-1 && endReel != i {
+		// 边界特殊处理
+		suc, path := l.FindTransverseConnectPath(startReel, line, endReel, line, true)
+		// 边界特殊处理 到达边界行 则只需要end节点能竖向直达边界行的同一列节点即可
+		if !suc && line != 0 && line != len(l.LinkMap[0])-1 {
 			continue
 		}
-		// 判断结束节点是否可以抵达当前列
-		find, transverseConnectPath := l.FindTransverseConnectPath(i, endLine, endReel, endLine, true)
-		if !find {
-			continue
-		}
-		res := append(path, transverseConnectPath[1:]...)
-		// 拼接开始坐标到当前 i 的坐标
-		var starPath [][]int
-		for j := startReel; j < i; j++ {
-			starPath = append(starPath, []int{j, startLine})
-		}
-		res = append(starPath, res...)
+		find, verticalPath := l.FindVerticalConnectPath(endReel, line, endReel, endLine, true)
 		if find {
-			return true, res
+			return true, append(path, verticalPath...)
+		}
+	}
+	return false, nil
+}
+
+func (l *LinkGame) findTransverseHalfBorderPath(startReel int, startLine int, endReel int, endLine int) (bool, [][]int) {
+	reels := make([]int, 0)
+	// 左右分别遍历寻找 可直达的reel集合
+	for i := startReel; i >= 0; i-- {
+		if l.LinkMap[i][startLine] != nullPosition && i != startReel {
+			break
+		}
+		reels = append(reels, i)
+	}
+	for i := startReel + 1; i <= len(l.LinkMap)-1; i++ {
+		if l.LinkMap[i][startLine] != nullPosition {
+			break
+		}
+		reels = append(reels, i)
+	}
+	// 遍历reels 寻找end position 可达到的节点
+	for _, reel := range reels {
+		if l.LinkMap[reel][endLine] != nullPosition {
+			continue
+		}
+		suc, path := l.FindVerticalConnectPath(reel, startLine, reel, endLine, true)
+		// 边界特殊处理 到达边界列 则只需要end节点横向能直达边界列的同一行节点即可
+		if !suc && reel != 0 && reel != len(l.LinkMap)-1 {
+			continue
+		}
+		find, path2 := l.FindTransverseConnectPath(reel, endLine, endReel, endLine, true)
+		if find {
+			return true, append(path, path2...)
 		}
 	}
 	return false, nil
@@ -363,7 +458,7 @@ func (l *LinkGame) tryPassablePath(sameIconPosition [][]int) (reel, line int) {
 		return
 	}
 	for i := 0; i < len(l.LinkMap); i++ {
-		reel, line = l.tryVerticalPath(i, startLine)
+		reel, line = l.tryTransversePath(i, startLine)
 		if reel != -1 && line != -1 {
 			return
 		}
@@ -403,4 +498,39 @@ func (l *LinkGame) tryVerticalPath(startIconReel, startIconLine int) (reel, line
 		}
 	}
 	return -1, -1
+}
+
+// 查找是否有解
+func (l *LinkGame) CheckHasPassablePath() bool {
+	// 找出相同icon的下标集合
+	// 过程中如果不是处于边界的icon可以尝试判断上下左右四个方向是否存在icon,都存在且都是该icon，那代表这个位置已经被堵死了，不需要考虑通路了；存在且是同一个icon 证明找到了解 直接return
+	sameIconIndex := make(map[int][][]int, 8)
+	for reel, lineIcons := range l.LinkMap {
+		for line, icon := range lineIcons {
+			if reel == 0 || line == 0 || reel == len(l.LinkMap) || line == len(l.LinkMap[0]) {
+				sameIconIndex[icon] = append(sameIconIndex[icon], []int{reel, line})
+				continue
+			}
+			if l.LinkMap[reel-1][line] == icon || l.LinkMap[reel+1][line] == icon || l.LinkMap[reel][line-1] == icon || l.LinkMap[reel][line+1] == icon {
+				return true
+			}
+			if l.LinkMap[reel-1][line] == nullPosition || l.LinkMap[reel+1][line] == nullPosition || l.LinkMap[reel][line-1] == nullPosition || l.LinkMap[reel][line+1] == nullPosition {
+				sameIconIndex[icon] = append(sameIconIndex[icon], []int{reel, line})
+			}
+		}
+	}
+	for _, indexes := range sameIconIndex {
+		if len(indexes) < 2 {
+			continue
+		}
+		for i, index := range indexes {
+			for j := i + 1; j < len(indexes); j++ {
+				find, _ := l.FindPassablePath(index[0], index[1], indexes[j][0], indexes[j][1])
+				if find {
+					return true
+				}
+			}
+		}
+	}
+	return false
 }
